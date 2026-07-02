@@ -9,8 +9,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Миграции идут через прямое соединение — Neon-пулер (pgbouncer, transaction mode)
+  // не поддерживает advisory lock, который использует `prisma migrate`.
+  directUrl = env("DATABASE_URL_UNPOOLED")
 }
 
 // ---------- Перечисления ----------
