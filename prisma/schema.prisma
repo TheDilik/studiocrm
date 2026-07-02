@@ -1,0 +1,523 @@
+// ============================================================
+// StudioCRM — Prisma schema
+// Деньги: Int в минорных единицах (копейки).
+// Мультитенантность: organizationId во всех бизнес-таблицах.
+// ============================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Перечисления ----------
+
+enum Role {
+  OWNER
+  MANAGER
+  EMPLOYEE
+  CLIENT
+}
+
+enum ClientStatus {
+  LEAD // лид
+  NEGOTIATION // в переговорах
+  ACTIVE // активный клиент
+  ARCHIVED // архив
+}
+
+enum ProjectType {
+  WEBSITE // сайт
+  ECOMMERCE // интернет-магазин
+  LANDING // лендинг
+  SUPPORT // поддержка
+  OTHER // другое
+}
+
+enum ProjectStatus {
+  NEGOTIATION // переговоры
+  IN_PROGRESS // в работе
+  ON_HOLD // на паузе
+  DELIVERED // сдан
+  CANCELLED // отменён
+}
+
+enum MilestoneStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  APPROVED // согласован клиентом (портал, фаза 6)
+}
+
+enum TaskStatus {
+  BACKLOG // бэклог
+  IN_PROGRESS // в работе
+  REVIEW // на проверке
+  DONE // готово
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum PaymentStatus {
+  EXPECTED // ожидается
+  RECEIVED // получен
+  OVERDUE // просрочен (обновляется фоновой проверкой)
+}
+
+enum PaymentKind {
+  PREPAYMENT // предоплата
+  POSTPAYMENT // постоплата
+  INSTALLMENT // этап
+  FULL // полная
+}
+
+enum ExpenseCategory {
+  SALARY // зарплаты
+  CONTRACTOR // подрядчики
+  SOFTWARE // софт/подписки
+  ADVERTISING // реклама
+  OFFICE // офис
+  OTHER // прочее
+}
+
+enum InteractionType {
+  CALL // звонок
+  MEETING // встреча
+  EMAIL // письмо
+  MESSAGE // сообщение
+  OTHER
+}
+
+enum RateType {
+  HOURLY // почасовая ставка
+  MONTHLY // фикс в месяц
+}
+
+enum AbsenceType {
+  VACATION // отпуск
+  DAY_OFF // отгул
+  SICK // больничный
+  OTHER
+}
+
+enum NotificationType {
+  TASK_ASSIGNED
+  DEADLINE_SOON
+  PAYMENT_RECEIVED
+  PAYMENT_OVERDUE
+  MENTION
+  OTHER
+}
+
+enum AiRole {
+  USER
+  ASSISTANT
+}
+
+// ---------- Организация (тенант) ----------
+
+model Organization {
+  id         String   @id @default(cuid())
+  name       String
+  slug       String   @unique
+  currency   String   @default("RUB") // RUB, USD, UZS, KZT ...
+  timezone   String   @default("Europe/Moscow")
+  dateFormat String   @default("dd.MM.yyyy")
+  locale     String   @default("ru")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  memberships     Membership[]
+  clients         Client[]
+  projects        Project[]
+  tasks           Task[]
+  timeEntries     TimeEntry[]
+  employees       Employee[]
+  payments        Payment[]
+  expenses        Expense[]
+  interactions    Interaction[]
+  milestones      Milestone[]
+  notifications   Notification[]
+  absences        Absence[]
+  aiConversations AiConversation[]
+}
+
+// ---------- Аутентификация / доступ ----------
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String? // email+пароль; null для будущего OAuth-only
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  memberships Membership[]
+  accounts    Account[]
+  sessions    Session[]
+  employee    Employee?
+  clientLink  Client?      @relation("ClientPortalUser") // учётка клиента (портал)
+
+  interactions       Interaction[]
+  assignedTasks      Task[]           @relation("TaskAssignee")
+  timeEntries        TimeEntry[]
+  notifications      Notification[]
+  aiConversations    AiConversation[]
+  managedClients     Client[]         @relation("ClientManager")
+  managedProjects    Project[]        @relation("ProjectManager")
+  projectMemberships ProjectMember[]
+}
+
+model Membership {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           Role
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+// NextAuth (Prisma adapter)
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ---------- Клиенты ----------
+
+model Client {
+  id             String       @id @default(cuid())
+  organizationId String
+  companyName    String
+  industry       String? // сфера деятельности
+  source         String? // откуда пришёл
+  status         ClientStatus @default(LEAD)
+  notes          String?
+  managerId      String? // ответственный менеджер (User)
+  portalUserId   String?      @unique // учётка клиента для портала (фаза 6)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  manager      User?           @relation("ClientManager", fields: [managerId], references: [id])
+  portalUser   User?           @relation("ClientPortalUser", fields: [portalUserId], references: [id])
+  contacts     ContactPerson[]
+  interactions Interaction[]
+  projects     Project[]
+  payments     Payment[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, managerId])
+}
+
+model ContactPerson {
+  id        String  @id @default(cuid())
+  clientId  String
+  name      String
+  position  String?
+  phone     String?
+  email     String?
+  telegram  String?
+  isPrimary Boolean @default(false)
+
+  client Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+}
+
+model Interaction {
+  id             String          @id @default(cuid())
+  organizationId String
+  clientId       String
+  authorId       String?
+  type           InteractionType
+  note           String
+  date           DateTime        @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  author       User?        @relation(fields: [authorId], references: [id])
+
+  @@index([organizationId, clientId])
+}
+
+// ---------- Проекты ----------
+
+model Project {
+  id             String        @id @default(cuid())
+  organizationId String
+  clientId       String
+  name           String
+  type           ProjectType   @default(WEBSITE)
+  budget         Int           @default(0) // минорные единицы
+  startDate      DateTime?
+  deadline       DateTime?
+  status         ProjectStatus @default(NEGOTIATION)
+  managerId      String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  manager      User?           @relation("ProjectManager", fields: [managerId], references: [id])
+  members      ProjectMember[]
+  milestones   Milestone[]
+  tasks        Task[]
+  payments     Payment[]
+  expenses     Expense[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, clientId])
+}
+
+model ProjectMember {
+  id        String @id @default(cuid())
+  projectId String
+  userId    String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+}
+
+model Milestone {
+  id             String          @id @default(cuid())
+  organizationId String
+  projectId      String
+  name           String
+  description    String?
+  dueDate        DateTime?
+  amount         Int? // сумма этапа для поэтапной оплаты
+  status         MilestoneStatus @default(PENDING)
+  order          Int             @default(0)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, projectId])
+}
+
+// ---------- Задачи / трекинг времени ----------
+
+model Task {
+  id             String       @id @default(cuid())
+  organizationId String
+  projectId      String
+  title          String
+  description    String?
+  assigneeId     String?
+  priority       TaskPriority @default(MEDIUM)
+  status         TaskStatus   @default(BACKLOG)
+  dueDate        DateTime?
+  order          Int          @default(0) // позиция в колонке канбана
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee     User?        @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  timeEntries  TimeEntry[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, assigneeId])
+  @@index([projectId])
+}
+
+model TimeEntry {
+  id             String    @id @default(cuid())
+  organizationId String
+  taskId         String
+  userId         String
+  minutes        Int       @default(0) // фактически отработано
+  startedAt      DateTime? // для активного таймера
+  endedAt        DateTime?
+  isRunning      Boolean   @default(false)
+  isManual       Boolean   @default(false) // внесено вручную задним числом
+  description    String?
+  date           DateTime  @default(now()) // рабочий день записи
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  task         Task         @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, userId, date])
+  @@index([taskId])
+}
+
+// ---------- Сотрудники ----------
+
+model Employee {
+  id             String    @id @default(cuid())
+  organizationId String
+  userId         String?   @unique // связь с учёткой (опционально)
+  fullName       String
+  position       String?
+  rateType       RateType  @default(HOURLY)
+  rateAmount     Int       @default(0) // минорные единицы (в час или в месяц)
+  hireDate       DateTime?
+  phone          String?
+  email          String?
+  isActive       Boolean   @default(true)
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id])
+  absences     Absence[]
+
+  @@index([organizationId])
+}
+
+model Absence {
+  id             String      @id @default(cuid())
+  organizationId String
+  employeeId     String
+  type           AbsenceType @default(VACATION)
+  startDate      DateTime
+  endDate        DateTime
+  note           String?
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, employeeId])
+}
+
+// ---------- Финансы ----------
+
+// Доходы
+model Payment {
+  id             String        @id @default(cuid())
+  organizationId String
+  clientId       String
+  projectId      String?
+  amount         Int // минорные единицы
+  method         String? // способ оплаты
+  kind           PaymentKind   @default(FULL)
+  status         PaymentStatus @default(EXPECTED)
+  dueDate        DateTime? // ожидаемая дата (для дебиторки/просрочки)
+  paidAt         DateTime? // фактическая дата получения
+  note           String?
+  createdAt      DateTime      @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  client       Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  project      Project?     @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId, status])
+  @@index([organizationId, clientId])
+  @@index([projectId])
+}
+
+// Расходы
+model Expense {
+  id             String          @id @default(cuid())
+  organizationId String
+  projectId      String?
+  employeeId     String? // если это зарплатная часть
+  category       ExpenseCategory @default(OTHER)
+  amount         Int
+  date           DateTime        @default(now())
+  description    String?
+  isAuto         Boolean         @default(false) // авто-расчёт зарплаты (часы × ставка)
+  createdAt      DateTime        @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project      Project?     @relation(fields: [projectId], references: [id])
+
+  @@index([organizationId, category])
+  @@index([projectId])
+}
+
+// ---------- Уведомления ----------
+
+model Notification {
+  id             String           @id @default(cuid())
+  organizationId String
+  userId         String
+  type           NotificationType
+  title          String
+  body           String?
+  entityType     String? // "task" | "payment" | ...
+  entityId       String?
+  isRead         Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, userId, isRead])
+}
+
+// ---------- AI-помощник ----------
+
+model AiConversation {
+  id             String   @id @default(cuid())
+  organizationId String
+  userId         String
+  title          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages     AiMessage[]
+
+  @@index([organizationId, userId])
+}
+
+model AiMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           AiRole
+  content        String   @db.Text
+  toolCalls      Json? // сохранённые tool_use / tool_result блоки
+  createdAt      DateTime @default(now())
+
+  conversation AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+}
