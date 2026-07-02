@@ -6,6 +6,7 @@ import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
+import { ChatPanel } from "@/components/ai/chat-panel";
 
 export default async function AppLayout({
   children,
@@ -43,6 +44,7 @@ export default async function AppLayout({
         </header>
         <main className="flex-1 p-4 md:p-6">{children}</main>
       </div>
+      <ChatPanel />
     </div>
   );
 }
