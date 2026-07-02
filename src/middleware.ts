@@ -12,6 +12,9 @@ export async function middleware(request: NextRequest) {
   const token = await getToken({
     req: request,
     secret: process.env.AUTH_SECRET,
+    // На проде (HTTPS) NextAuth ставит куку с префиксом __Secure- —
+    // без явного флага getToken ищет незащищённое имя и не находит сессию.
+    secureCookie: process.env.NODE_ENV === "production",
   });
 
   if (!token && !isPublic) {
