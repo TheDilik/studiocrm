@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { canManageClients, requireSession } from "@/lib/rbac";
 import { AccessDenied } from "@/components/access-denied";
 import { listClients, listClientSources } from "@/lib/services/clients";
 import { listOrgUsers } from "@/lib/services/projects";
 import { clientFiltersSchema } from "@/lib/validators/client";
+import { deleteClientAction } from "@/app/actions/clients";
 import { formatDate } from "@/lib/format";
 import { CLIENT_STATUS } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status-badge";
+import { ConfirmDelete } from "@/components/confirm-delete";
 import { ClientsToolbar } from "./clients-toolbar";
 import { ClientFormDialog } from "./client-form-dialog";
 
@@ -68,7 +70,7 @@ export default async function ClientsPage({
                 Проекты
               </TableHead>
               <TableHead className="hidden xl:table-cell">Обновлён</TableHead>
-              <TableHead className="w-10" />
+              <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -125,27 +127,43 @@ export default async function ClientsPage({
                   {formatDate(client.updatedAt)}
                 </TableCell>
                 <TableCell>
-                  <ClientFormDialog
-                    clientId={client.id}
-                    managers={managers}
-                    initial={{
-                      companyName: client.companyName,
-                      industry: client.industry ?? "",
-                      source: client.source ?? "",
-                      status: client.status,
-                      notes: client.notes ?? "",
-                      managerId: client.managerId ?? "",
-                    }}
-                    trigger={
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Редактировать «${client.companyName}»`}
-                      >
-                        <Pencil className="size-3.5" />
-                      </Button>
-                    }
-                  />
+                  <div className="flex gap-1">
+                    <ClientFormDialog
+                      clientId={client.id}
+                      managers={managers}
+                      initial={{
+                        companyName: client.companyName,
+                        industry: client.industry ?? "",
+                        source: client.source ?? "",
+                        status: client.status,
+                        notes: client.notes ?? "",
+                        managerId: client.managerId ?? "",
+                      }}
+                      trigger={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Редактировать «${client.companyName}»`}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                      }
+                    />
+                    <ConfirmDelete
+                      title={`Удалить клиента «${client.companyName}»?`}
+                      description="Будут удалены все проекты, контакты и история взаимодействий."
+                      action={deleteClientAction.bind(null, client.id)}
+                      trigger={
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          aria-label={`Удалить «${client.companyName}»`}
+                        >
+                          <Trash2 className="size-3.5 text-destructive" />
+                        </Button>
+                      }
+                    />
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
