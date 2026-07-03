@@ -80,10 +80,12 @@ export function ClientFormDialog({
       status,
       notes: fd.get("notes") as string,
       managerId: managerId === NONE ? "" : managerId,
-      contactName: fd.get("contactName") as string,
-      contactPhone: fd.get("contactPhone") as string,
-      contactEmail: fd.get("contactEmail") as string,
-      contactTelegram: fd.get("contactTelegram") as string,
+      // В режиме редактирования этих полей нет в форме — fd.get() вернёт null,
+      // а не undefined, что не проходит .optional() в zod-схеме.
+      contactName: (fd.get("contactName") as string | null) ?? "",
+      contactPhone: (fd.get("contactPhone") as string | null) ?? "",
+      contactEmail: (fd.get("contactEmail") as string | null) ?? "",
+      contactTelegram: (fd.get("contactTelegram") as string | null) ?? "",
     };
     const result = clientId
       ? await updateClientAction(clientId, input)
