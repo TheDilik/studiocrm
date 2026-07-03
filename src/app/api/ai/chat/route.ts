@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import type Anthropic from "@anthropic-ai/sdk";
+import Anthropic from "@anthropic-ai/sdk";
 import { requireSession } from "@/lib/rbac";
 import { getAnthropicClient, AI_MODEL } from "@/lib/ai/client";
 import { AI_TOOLS, executeTool } from "@/lib/ai/tools";
@@ -130,8 +130,26 @@ export async function POST(request: Request) {
     await addMessage(conversation.id, "ASSISTANT", fallback, toolTrace);
     return NextResponse.json({ reply: fallback, toolCalls: toolTrace });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Ошибка при обращении к AI";
-    return NextResponse.json({ error: message }, { status: 502 });
+    return NextResponse.json({ error: describeAiError(error) }, { status: 502 });
   }
+}
+
+/** Переводит типовые ошибки Anthropic API в понятные русские сообщения. */
+function describeAiError(error: unknown): string {
+  if (error instanceof Anthropic.APIError) {
+    const detail =
+      (error.error as { error?: { message?: string } } | undefined)?.error?.message ??
+      "";
+    if (error.status === 401) {
+      return "Неверный ANTHROPIC_API_KEY — проверьте ключ в настройках.";
+    }
+    if (error.status === 400 && detail.toLowerCase().includes("credit balance")) {
+      return "На аккаунте Anthropic закончились кредиты. Пополните баланс на console.anthropic.com → Plans & Billing.";
+    }
+    if (error.status === 429) {
+      return "Превышен лимит запросов к Claude API. Попробуйте через минуту.";
+    }
+    return `Ошибка Anthropic API (${error.status}): ${detail || error.message}`;
+  }
+  return error instanceof Error ? error.message : "Ошибка при обращении к AI";
 }
