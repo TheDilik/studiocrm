@@ -1,4 +1,5 @@
 // Сервисный слой клиентов. Всегда принимает SessionContext и фильтрует по organizationId.
+import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { canManageClients, ForbiddenError, type SessionContext } from "@/lib/rbac";
 import type {
@@ -7,6 +8,7 @@ import type {
   ContactInput,
   InteractionInput,
 } from "@/lib/validators/client";
+import type { PortalAccessInput } from "@/lib/validators/portal";
 
 const emptyToNull = (v: string | undefined) => (v ? v : null);
 
@@ -52,6 +54,7 @@ export async function getClient(ctx: SessionContext, id: string) {
     where: { id, organizationId: ctx.organizationId },
     include: {
       manager: { select: { id: true, name: true } },
+      portalUser: { select: { id: true, email: true } },
       contacts: { orderBy: [{ isPrimary: "desc" }, { name: "asc" }] },
       interactions: {
         orderBy: { date: "desc" },
@@ -220,4 +223,59 @@ export async function deleteInteraction(ctx: SessionContext, id: string) {
     where: { id, organizationId: ctx.organizationId },
   });
   if (count === 0) throw new Error("Запись не найдена");
+}
+
+// --- Доступ клиента к порталу (фаза 6) ---
+
+export async function createPortalAccess(
+  ctx: SessionContext,
+  clientId: string,
+  input: PortalAccessInput
+) {
+  if (!canManageClients(ctx.role)) throw new ForbiddenError();
+
+  const client = await prisma.client.findFirst({
+    where: { id: clientId, organizationId: ctx.organizationId },
+    select: { id: true, portalUserId: true, companyName: true },
+  });
+  if (!client) throw new Error("Клиент не найден");
+  if (client.portalUserId) throw new Error("У клиента уже есть доступ к порталу");
+
+  const existingEmail = await prisma.user.findUnique({
+    where: { email: input.email.toLowerCase() },
+    select: { id: true },
+  });
+  if (existingEmail) throw new Error("Этот email уже используется другой учётной записью");
+
+  const passwordHash = await hash(input.password, 10);
+
+  await prisma.$transaction(async (tx) => {
+    const user = await tx.user.create({
+      data: {
+        email: input.email.toLowerCase(),
+        name: client.companyName,
+        passwordHash,
+        memberships: { create: { organizationId: ctx.organizationId, role: "CLIENT" } },
+      },
+    });
+    await tx.client.update({
+      where: { id: clientId },
+      data: { portalUserId: user.id },
+    });
+  });
+}
+
+export async function revokePortalAccess(ctx: SessionContext, clientId: string) {
+  if (!canManageClients(ctx.role)) throw new ForbiddenError();
+
+  const client = await prisma.client.findFirst({
+    where: { id: clientId, organizationId: ctx.organizationId },
+    select: { portalUserId: true },
+  });
+  if (!client?.portalUserId) throw new Error("Доступ к порталу не настроен");
+
+  await prisma.$transaction([
+    prisma.client.update({ where: { id: clientId }, data: { portalUserId: null } }),
+    prisma.user.delete({ where: { id: client.portalUserId } }),
+  ]);
 }

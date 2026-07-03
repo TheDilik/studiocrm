@@ -156,14 +156,15 @@ model Organization {
 // ---------- Аутентификация / доступ ----------
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String? // email+пароль; null для будущего OAuth-only
-  name          String?
-  image         String?
-  emailVerified DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id             String    @id @default(cuid())
+  email          String    @unique
+  passwordHash   String? // email+пароль; null для будущего OAuth-only
+  name           String?
+  image          String?
+  emailVerified  DateTime?
+  telegramChatId String? // для уведомлений в Telegram (заготовка, фаза 6)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   memberships Membership[]
   accounts    Account[]
@@ -172,13 +173,14 @@ model User {
   clientLink  Client?      @relation("ClientPortalUser") // учётка клиента (портал)
 
   interactions       Interaction[]
-  assignedTasks      Task[]           @relation("TaskAssignee")
+  assignedTasks      Task[]             @relation("TaskAssignee")
   timeEntries        TimeEntry[]
   notifications      Notification[]
   aiConversations    AiConversation[]
-  managedClients     Client[]         @relation("ClientManager")
-  managedProjects    Project[]        @relation("ProjectManager")
+  managedClients     Client[]           @relation("ClientManager")
+  managedProjects    Project[]          @relation("ProjectManager")
   projectMemberships ProjectMember[]
+  milestoneComments  MilestoneComment[]
 }
 
 model Membership {
@@ -339,10 +341,25 @@ model Milestone {
   status         MilestoneStatus @default(PENDING)
   order          Int             @default(0)
 
-  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  project      Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  organization Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  project      Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  comments     MilestoneComment[]
 
   @@index([organizationId, projectId])
+}
+
+// Комментарии к этапу в клиентском портале (сотрудники и клиент)
+model MilestoneComment {
+  id          String   @id @default(cuid())
+  milestoneId String
+  authorId    String
+  body        String
+  createdAt   DateTime @default(now())
+
+  milestone Milestone @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([milestoneId])
 }
 
 // ---------- Задачи / трекинг времени ----------

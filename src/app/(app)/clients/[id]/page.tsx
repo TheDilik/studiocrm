@@ -38,6 +38,7 @@ import { ConfirmDelete } from "@/components/confirm-delete";
 import { ClientFormDialog } from "../client-form-dialog";
 import { ContactDialog } from "./contact-dialog";
 import { InteractionForm } from "./interaction-form";
+import { PortalAccessCard } from "./portal-access-card";
 
 export const metadata = { title: "Клиент — StudioCRM" };
 
@@ -290,6 +291,8 @@ export default async function ClientPage({
               ))}
             </CardContent>
           </Card>
+
+          <PortalAccessCard clientId={client.id} portalUser={client.portalUser} />
         </div>
       </div>
 

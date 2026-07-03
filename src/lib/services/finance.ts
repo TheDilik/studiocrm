@@ -9,6 +9,7 @@ import {
 } from "@/lib/rbac";
 import type { ExpenseInput, PaymentInput } from "@/lib/validators/finance";
 import { toMinor } from "@/lib/format";
+import { createNotification } from "@/lib/services/notifications";
 
 const emptyToNull = (v: string | undefined) => (v ? v : null);
 
@@ -52,19 +53,21 @@ export async function checkOverduePayments(organizationId: string) {
     where: { organizationId, role: "OWNER" },
     select: { userId: true },
   });
-  await prisma.notification.createMany({
-    data: overdue.flatMap((p) =>
-      owners.map((o) => ({
-        organizationId,
-        userId: o.userId,
-        type: "PAYMENT_OVERDUE" as const,
-        title: "Просрочен платёж",
-        body: `${p.client.companyName}: ${(p.amount / 100).toLocaleString("ru-RU")} — срок ${p.dueDate!.toLocaleDateString("ru-RU")}`,
-        entityType: "payment",
-        entityId: p.id,
-      }))
-    ),
-  });
+  await Promise.all(
+    overdue.flatMap((p) =>
+      owners.map((o) =>
+        createNotification({
+          organizationId,
+          userId: o.userId,
+          type: "PAYMENT_OVERDUE",
+          title: "Просрочен платёж",
+          body: `${p.client.companyName}: ${(p.amount / 100).toLocaleString("ru-RU")} — срок ${p.dueDate!.toLocaleDateString("ru-RU")}`,
+          entityType: "payment",
+          entityId: p.id,
+        })
+      )
+    )
+  );
   return overdue.length;
 }
 
@@ -111,17 +114,19 @@ export async function createPayment(ctx: SessionContext, input: PaymentInput) {
       where: { organizationId: ctx.organizationId, role: "OWNER" },
       select: { userId: true },
     });
-    await prisma.notification.createMany({
-      data: owners.map((o) => ({
-        organizationId: ctx.organizationId,
-        userId: o.userId,
-        type: "PAYMENT_RECEIVED" as const,
-        title: "Получен платёж",
-        body: `${(payment.amount / 100).toLocaleString("ru-RU")}`,
-        entityType: "payment",
-        entityId: payment.id,
-      })),
-    });
+    await Promise.all(
+      owners.map((o) =>
+        createNotification({
+          organizationId: ctx.organizationId,
+          userId: o.userId,
+          type: "PAYMENT_RECEIVED",
+          title: "Получен платёж",
+          body: `${(payment.amount / 100).toLocaleString("ru-RU")}`,
+          entityType: "payment",
+          entityId: payment.id,
+        })
+      )
+    );
   }
   return payment;
 }

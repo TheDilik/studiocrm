@@ -58,7 +58,7 @@ export const NAV_ITEMS: NavItem[] = [
     title: "Настройки",
     href: "/settings",
     icon: Settings,
-    roles: ["OWNER"],
+    roles: ["OWNER", "MANAGER", "EMPLOYEE"], // раздел организации внутри виден только владельцу
   },
 ];
 

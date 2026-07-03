@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { canManageClients, ForbiddenError, type SessionContext } from "@/lib/rbac";
 import type { MoveTaskInput, TaskFilters, TaskInput } from "@/lib/validators/task";
+import { createNotification } from "@/lib/services/notifications";
 
 const emptyToNull = (v: string | undefined) => (v ? v : null);
 
@@ -96,18 +97,15 @@ export async function createTask(ctx: SessionContext, input: TaskInput) {
     },
   });
 
-  // Уведомление исполнителю (колокольчик — фаза 6, данные пишем уже сейчас)
   if (task.assigneeId && task.assigneeId !== ctx.userId) {
-    await prisma.notification.create({
-      data: {
-        organizationId: ctx.organizationId,
-        userId: task.assigneeId,
-        type: "TASK_ASSIGNED",
-        title: "Вам назначена задача",
-        body: task.title,
-        entityType: "task",
-        entityId: task.id,
-      },
+    await createNotification({
+      organizationId: ctx.organizationId,
+      userId: task.assigneeId,
+      type: "TASK_ASSIGNED",
+      title: "Вам назначена задача",
+      body: task.title,
+      entityType: "task",
+      entityId: task.id,
     });
   }
   return task;
@@ -131,16 +129,14 @@ export async function updateTask(ctx: SessionContext, taskId: string, input: Tas
 
   const newAssignee = emptyToNull(input.assigneeId);
   if (newAssignee && newAssignee !== existing.assigneeId && newAssignee !== ctx.userId) {
-    await prisma.notification.create({
-      data: {
-        organizationId: ctx.organizationId,
-        userId: newAssignee,
-        type: "TASK_ASSIGNED",
-        title: "Вам назначена задача",
-        body: task.title,
-        entityType: "task",
-        entityId: task.id,
-      },
+    await createNotification({
+      organizationId: ctx.organizationId,
+      userId: newAssignee,
+      type: "TASK_ASSIGNED",
+      title: "Вам назначена задача",
+      body: task.title,
+      entityType: "task",
+      entityId: task.id,
     });
   }
   return task;

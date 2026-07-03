@@ -31,6 +31,7 @@ import { StatusBadge } from "@/components/status-badge";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { ProjectFormDialog } from "../project-form-dialog";
 import { MilestoneDialog } from "./milestone-dialog";
+import { MilestoneComments } from "./milestone-comments";
 
 export const metadata = { title: "Проект — StudioCRM" };
 
@@ -223,57 +224,57 @@ export default async function ProjectPage({
               <p className="text-sm text-muted-foreground">Этапов пока нет</p>
             )}
             {project.milestones.map((m, index) => (
-              <div
-                key={m.id}
-                className="flex items-center justify-between gap-3 rounded-lg border p-3"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium">{m.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      до {formatDate(m.dueDate)}
-                      {m.amount != null && showFinance && (
-                        <> · {formatMoney(m.amount)}</>
-                      )}
+              <div key={m.id} className="rounded-lg border p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium">{m.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        до {formatDate(m.dueDate)}
+                        {m.amount != null && showFinance && (
+                          <> · {formatMoney(m.amount)}</>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center gap-1">
+                    <StatusBadge {...MILESTONE_STATUS[m.status]} />
+                    {canManage && (
+                      <>
+                        <MilestoneDialog
+                          projectId={project.id}
+                          milestone={m}
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Редактировать этап"
+                            >
+                              <Pencil className="size-3.5" />
+                            </Button>
+                          }
+                        />
+                        <ConfirmDelete
+                          title={`Удалить этап «${m.name}»?`}
+                          action={deleteMilestoneAction.bind(null, project.id, m.id)}
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label="Удалить этап"
+                            >
+                              <Trash2 className="size-3.5 text-destructive" />
+                            </Button>
+                          }
+                        />
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <StatusBadge {...MILESTONE_STATUS[m.status]} />
-                  {canManage && (
-                    <>
-                      <MilestoneDialog
-                        projectId={project.id}
-                        milestone={m}
-                        trigger={
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Редактировать этап"
-                          >
-                            <Pencil className="size-3.5" />
-                          </Button>
-                        }
-                      />
-                      <ConfirmDelete
-                        title={`Удалить этап «${m.name}»?`}
-                        action={deleteMilestoneAction.bind(null, project.id, m.id)}
-                        trigger={
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            aria-label="Удалить этап"
-                          >
-                            <Trash2 className="size-3.5 text-destructive" />
-                          </Button>
-                        }
-                      />
-                    </>
-                  )}
-                </div>
+                <MilestoneComments milestoneId={m.id} comments={m.comments} />
               </div>
             ))}
           </CardContent>

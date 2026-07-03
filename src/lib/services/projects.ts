@@ -47,7 +47,15 @@ export async function getProject(ctx: SessionContext, id: string) {
       client: { select: { id: true, companyName: true } },
       manager: { select: { id: true, name: true } },
       members: { include: { user: { select: { id: true, name: true } } } },
-      milestones: { orderBy: { order: "asc" } },
+      milestones: {
+        orderBy: { order: "asc" },
+        include: {
+          comments: {
+            orderBy: { createdAt: "asc" },
+            include: { author: { select: { name: true, email: true } } },
+          },
+        },
+      },
       tasks: {
         orderBy: { createdAt: "desc" },
         select: { id: true, title: true, status: true, priority: true, dueDate: true },
@@ -252,6 +260,72 @@ export async function deleteMilestone(ctx: SessionContext, milestoneId: string) 
     where: { id: milestoneId, organizationId: ctx.organizationId },
   });
   if (count === 0) throw new Error("Этап не найден");
+}
+
+// --- Комментарии и согласование этапов (общие для сотрудников и портала клиента) ---
+
+/** Проверяет доступ к этапу: сотрудник — по своему проекту, клиент — по своей карточке. */
+async function assertMilestoneAccess(ctx: SessionContext, milestoneId: string) {
+  const milestone = await prisma.milestone.findFirst({
+    where: { id: milestoneId, organizationId: ctx.organizationId },
+    include: {
+      project: {
+        select: {
+          clientId: true,
+          managerId: true,
+          members: { select: { userId: true } },
+        },
+      },
+    },
+  });
+  if (!milestone) throw new Error("Этап не найден");
+
+  if (ctx.role === "CLIENT") {
+    const client = await prisma.client.findFirst({
+      where: { organizationId: ctx.organizationId, portalUserId: ctx.userId },
+      select: { id: true },
+    });
+    if (!client || client.id !== milestone.project.clientId) throw new ForbiddenError();
+  } else if (ctx.role === "EMPLOYEE") {
+    const allowed =
+      milestone.project.managerId === ctx.userId ||
+      milestone.project.members.some((m) => m.userId === ctx.userId);
+    if (!allowed) throw new ForbiddenError();
+  }
+  return milestone;
+}
+
+export async function listMilestoneComments(ctx: SessionContext, milestoneId: string) {
+  await assertMilestoneAccess(ctx, milestoneId);
+  return prisma.milestoneComment.findMany({
+    where: { milestoneId },
+    orderBy: { createdAt: "asc" },
+    include: { author: { select: { name: true, email: true } } },
+  });
+}
+
+export async function addMilestoneComment(
+  ctx: SessionContext,
+  milestoneId: string,
+  body: string
+) {
+  await assertMilestoneAccess(ctx, milestoneId);
+  return prisma.milestoneComment.create({
+    data: { milestoneId, authorId: ctx.userId, body },
+    include: { author: { select: { name: true, email: true } } },
+  });
+}
+
+/** Согласовать этап может только клиент — владелец проекта в портале. */
+export async function approveMilestone(ctx: SessionContext, milestoneId: string) {
+  if (ctx.role !== "CLIENT") {
+    throw new ForbiddenError("Согласовать этап может только клиент в портале");
+  }
+  await assertMilestoneAccess(ctx, milestoneId);
+  await prisma.milestone.update({
+    where: { id: milestoneId },
+    data: { status: "APPROVED" },
+  });
 }
 
 /** Пользователи организации для селектов (менеджер, команда). */

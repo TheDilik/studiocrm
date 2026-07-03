@@ -80,6 +80,18 @@ export const EXPENSE_CATEGORY: Record<ExpenseCategory, string> = {
   OTHER: "Прочее",
 };
 
+export const NOTIFICATION_ICON: Record<
+  import("@prisma/client").NotificationType,
+  string
+> = {
+  TASK_ASSIGNED: "📋",
+  DEADLINE_SOON: "⏰",
+  PAYMENT_RECEIVED: "💰",
+  PAYMENT_OVERDUE: "⚠️",
+  MENTION: "💬",
+  OTHER: "🔔",
+};
+
 export const ABSENCE_TYPE: Record<import("@prisma/client").AbsenceType, string> = {
   VACATION: "Отпуск",
   DAY_OFF: "Отгул",

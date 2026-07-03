@@ -40,7 +40,7 @@ export default async function ClientsPage({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">Клиенты</h1>
         <ClientFormDialog
           managers={managers}
