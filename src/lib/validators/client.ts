@@ -7,6 +7,11 @@ export const clientSchema = z.object({
   status: z.enum(["LEAD", "NEGOTIATION", "ACTIVE", "ARCHIVED"]),
   notes: z.string().trim().max(5000).optional().or(z.literal("")),
   managerId: z.string().optional().or(z.literal("")),
+  // Основной контакт — необязательно, заполняется только при создании клиента
+  contactName: z.string().trim().max(200).optional().or(z.literal("")),
+  contactPhone: z.string().trim().max(50).optional().or(z.literal("")),
+  contactEmail: z.string().trim().email("Некорректный email").optional().or(z.literal("")),
+  contactTelegram: z.string().trim().max(100).optional().or(z.literal("")),
 });
 export type ClientInput = z.infer<typeof clientSchema>;
 

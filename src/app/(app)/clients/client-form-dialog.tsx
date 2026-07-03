@@ -65,6 +65,10 @@ export function ClientFormDialog({
       status,
       notes: fd.get("notes") as string,
       managerId: managerId === NONE ? "" : managerId,
+      contactName: fd.get("contactName") as string,
+      contactPhone: fd.get("contactPhone") as string,
+      contactEmail: fd.get("contactEmail") as string,
+      contactTelegram: fd.get("contactTelegram") as string,
     };
     const result = clientId
       ? await updateClientAction(clientId, input)
@@ -161,6 +165,40 @@ export function ClientFormDialog({
               placeholder="Особенности работы с клиентом..."
             />
           </div>
+          {!clientId && (
+            <div className="space-y-3 rounded-lg border p-3">
+              <p className="text-sm font-medium">Основной контакт</p>
+              <p className="text-xs text-muted-foreground">
+                Необязательно — остальных контактов можно добавить позже на странице клиента
+              </p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="contactName">Имя</Label>
+                  <Input id="contactName" name="contactName" placeholder="Ольга Петрова" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactPhone">Телефон</Label>
+                  <Input
+                    id="contactPhone"
+                    name="contactPhone"
+                    placeholder="+7 900 000-00-00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactEmail">Email</Label>
+                  <Input id="contactEmail" name="contactEmail" type="email" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactTelegram">Telegram</Label>
+                  <Input
+                    id="contactTelegram"
+                    name="contactTelegram"
+                    placeholder="@username"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex justify-end gap-2">
             <Button

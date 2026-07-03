@@ -109,6 +109,18 @@ export async function createClient(ctx: SessionContext, input: ClientInput) {
       status: input.status,
       notes: emptyToNull(input.notes),
       managerId: emptyToNull(input.managerId),
+      // Основной контакт можно указать сразу при создании клиента
+      contacts: input.contactName
+        ? {
+            create: {
+              name: input.contactName,
+              phone: emptyToNull(input.contactPhone),
+              email: emptyToNull(input.contactEmail),
+              telegram: emptyToNull(input.contactTelegram),
+              isPrimary: true,
+            },
+          }
+        : undefined,
     },
   });
 }

@@ -36,6 +36,7 @@ import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/status-badge";
 import { ConfirmDelete } from "@/components/confirm-delete";
 import { ClientFormDialog } from "../client-form-dialog";
+import { ProjectFormDialog } from "../../projects/project-form-dialog";
 import { ContactDialog } from "./contact-dialog";
 import { InteractionForm } from "./interaction-form";
 import { PortalAccessCard } from "./portal-access-card";
@@ -229,8 +230,28 @@ export default async function ClientPage({
         {/* Проекты и платежи */}
         <div className="space-y-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Проекты</CardTitle>
+              <ProjectFormDialog
+                clients={[{ id: client.id, companyName: client.companyName }]}
+                users={users}
+                initial={{
+                  clientId: client.id,
+                  name: "",
+                  type: "WEBSITE",
+                  budgetMajor: 0,
+                  startDate: "",
+                  deadline: "",
+                  status: "NEGOTIATION",
+                  managerId: client.managerId ?? "",
+                  memberIds: [],
+                }}
+                trigger={
+                  <Button variant="outline" size="sm">
+                    <Plus className="size-4" /> Добавить
+                  </Button>
+                }
+              />
             </CardHeader>
             <CardContent className="space-y-2">
               {client.projects.length === 0 && (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Pencil, Plus } from "lucide-react";
 import { canManageClients, requireSession } from "@/lib/rbac";
 import { AccessDenied } from "@/components/access-denied";
 import { listClients, listClientSources } from "@/lib/services/clients";
@@ -68,13 +68,14 @@ export default async function ClientsPage({
                 Проекты
               </TableHead>
               <TableHead className="hidden xl:table-cell">Обновлён</TableHead>
+              <TableHead className="w-10" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {clients.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="h-24 text-center text-muted-foreground"
                 >
                   Клиенты не найдены
@@ -122,6 +123,29 @@ export default async function ClientsPage({
                 </TableCell>
                 <TableCell className="hidden xl:table-cell text-sm text-muted-foreground">
                   {formatDate(client.updatedAt)}
+                </TableCell>
+                <TableCell>
+                  <ClientFormDialog
+                    clientId={client.id}
+                    managers={managers}
+                    initial={{
+                      companyName: client.companyName,
+                      industry: client.industry ?? "",
+                      source: client.source ?? "",
+                      status: client.status,
+                      notes: client.notes ?? "",
+                      managerId: client.managerId ?? "",
+                    }}
+                    trigger={
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Редактировать «${client.companyName}»`}
+                      >
+                        <Pencil className="size-3.5" />
+                      </Button>
+                    }
+                  />
                 </TableCell>
               </TableRow>
             ))}
