@@ -14,6 +14,13 @@ import type {
 
 type LabelMap<T extends string> = Record<T, { label: string; className: string }>;
 
+export const ROLE_LABELS: Record<import("@prisma/client").Role, string> = {
+  OWNER: "Владелец",
+  MANAGER: "Менеджер",
+  EMPLOYEE: "Сотрудник",
+  CLIENT: "Клиент",
+};
+
 export const CLIENT_STATUS: LabelMap<ClientStatus> = {
   LEAD: { label: "Лид", className: "bg-sky-500/15 text-sky-600 dark:text-sky-400" },
   NEGOTIATION: { label: "В переговорах", className: "bg-amber-500/15 text-amber-600 dark:text-amber-400" },

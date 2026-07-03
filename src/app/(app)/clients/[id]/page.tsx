@@ -85,6 +85,7 @@ export default async function ClientPage({
           <ClientFormDialog
             clientId={client.id}
             managers={managers}
+            contacts={client.contacts}
             initial={{
               companyName: client.companyName,
               industry: client.industry ?? "",

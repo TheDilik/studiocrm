@@ -1,9 +1,11 @@
 import { canManageSettings, requireSession } from "@/lib/rbac";
 import { getOrganization } from "@/lib/services/organization";
 import { getTelegramStatus } from "@/lib/services/telegram-link";
+import { listTeamMembers } from "@/lib/services/team";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OrganizationForm } from "./organization-form";
 import { TelegramCard } from "./telegram-card";
+import { TeamCard } from "./team-card";
 
 export const metadata = { title: "Настройки — StudioCRM" };
 
@@ -11,9 +13,10 @@ export default async function SettingsPage() {
   const ctx = await requireSession();
   const isOwner = canManageSettings(ctx.role);
 
-  const [organization, telegram] = await Promise.all([
+  const [organization, telegram, team] = await Promise.all([
     isOwner ? getOrganization(ctx) : null,
     getTelegramStatus(ctx),
+    isOwner ? listTeamMembers(ctx) : Promise.resolve([]),
   ]);
 
   return (
@@ -25,6 +28,17 @@ export default async function SettingsPage() {
         connected={telegram.connected}
         botUsername={telegram.botUsername}
       />
+
+      {isOwner && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Команда</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <TeamCard members={team} currentUserId={ctx.userId} />
+          </CardContent>
+        </Card>
+      )}
 
       {isOwner && organization && (
         <Card>

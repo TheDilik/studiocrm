@@ -13,13 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const ROLE_LABELS: Record<Role, string> = {
-  OWNER: "Владелец",
-  MANAGER: "Менеджер",
-  EMPLOYEE: "Сотрудник",
-  CLIENT: "Клиент",
-};
+import { ROLE_LABELS } from "@/lib/labels";
 
 export function UserMenu({
   name,

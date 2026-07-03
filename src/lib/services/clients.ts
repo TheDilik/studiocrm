@@ -30,7 +30,9 @@ export async function listClients(ctx: SessionContext, filters: ClientFilters) {
     },
     include: {
       manager: { select: { id: true, name: true } },
-      contacts: { where: { isPrimary: true }, take: 1 },
+      // Первый элемент используется для превью в списке (contacts[0]);
+      // полный список нужен диалогу редактирования для управления контактами.
+      contacts: { orderBy: [{ isPrimary: "desc" }, { name: "asc" }] },
       _count: { select: { projects: true } },
     },
     orderBy: { updatedAt: "desc" },

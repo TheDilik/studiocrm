@@ -3,7 +3,8 @@
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { ClientStatus } from "@prisma/client";
-import { createClientAction, updateClientAction } from "@/app/actions/clients";
+import { Mail, Pencil, Phone, Plus, Send, Trash2 } from "lucide-react";
+import { createClientAction, updateClientAction, deleteContactAction } from "@/app/actions/clients";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,7 +23,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ConfirmDelete } from "@/components/confirm-delete";
 import { CLIENT_STATUS } from "@/lib/labels";
+import { ContactDialog } from "./[id]/contact-dialog";
 
 const NONE = "__none__";
 
@@ -35,16 +38,28 @@ export type ClientFormValues = {
   managerId: string;
 };
 
+export type ClientContact = {
+  id: string;
+  name: string;
+  position: string | null;
+  phone: string | null;
+  email: string | null;
+  telegram: string | null;
+  isPrimary: boolean;
+};
+
 export function ClientFormDialog({
   trigger,
   managers,
   clientId,
   initial,
+  contacts,
 }: {
   trigger: ReactNode;
   managers: { id: string; name: string }[];
   clientId?: string; // если задан — режим редактирования
   initial?: ClientFormValues;
+  contacts?: ClientContact[]; // для управления контактами в режиме редактирования
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -197,6 +212,88 @@ export function ClientFormDialog({
                   />
                 </div>
               </div>
+            </div>
+          )}
+          {clientId && contacts && (
+            <div className="space-y-2 rounded-lg border p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Контактные лица</p>
+                <ContactDialog
+                  clientId={clientId}
+                  trigger={
+                    <Button type="button" variant="outline" size="sm">
+                      <Plus className="size-3.5" /> Добавить
+                    </Button>
+                  }
+                />
+              </div>
+              {contacts.length === 0 && (
+                <p className="text-xs text-muted-foreground">Контактов пока нет</p>
+              )}
+              {contacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  className="flex items-start justify-between gap-2 rounded-lg border p-2.5"
+                >
+                  <div className="space-y-0.5">
+                    <div className="text-sm font-medium">
+                      {contact.name}
+                      {contact.isPrimary && (
+                        <span className="ml-2 text-xs text-emerald-600 dark:text-emerald-400">
+                          основной
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      {contact.phone && (
+                        <span className="inline-flex items-center gap-1">
+                          <Phone className="size-3" /> {contact.phone}
+                        </span>
+                      )}
+                      {contact.email && (
+                        <span className="inline-flex items-center gap-1">
+                          <Mail className="size-3" /> {contact.email}
+                        </span>
+                      )}
+                      {contact.telegram && (
+                        <span className="inline-flex items-center gap-1">
+                          <Send className="size-3" /> {contact.telegram}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 gap-1">
+                    <ContactDialog
+                      clientId={clientId}
+                      contact={contact}
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Редактировать контакт"
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                      }
+                    />
+                    <ConfirmDelete
+                      title={`Удалить контакт «${contact.name}»?`}
+                      action={deleteContactAction.bind(null, clientId, contact.id)}
+                      trigger={
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Удалить контакт"
+                        >
+                          <Trash2 className="size-3.5 text-destructive" />
+                        </Button>
+                      }
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
