@@ -32,14 +32,6 @@ enum ClientStatus {
   ARCHIVED // архив
 }
 
-enum ProjectType {
-  WEBSITE // сайт
-  ECOMMERCE // интернет-магазин
-  LANDING // лендинг
-  SUPPORT // поддержка
-  OTHER // другое
-}
-
 enum ProjectStatus {
   NEGOTIATION // переговоры
   IN_PROGRESS // в работе
@@ -297,7 +289,7 @@ model Project {
   organizationId String
   clientId       String
   name           String
-  type           ProjectType   @default(WEBSITE)
+  type           String        @default("Сайт") // свободный текст — студия может завести свой тип
   budget         Int           @default(0) // минорные единицы
   startDate      DateTime?
   deadline       DateTime?

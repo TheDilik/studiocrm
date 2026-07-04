@@ -3,7 +3,8 @@ import { z } from "zod";
 export const projectSchema = z.object({
   clientId: z.string().min(1, "Выберите клиента"),
   name: z.string().trim().min(1, "Укажите название проекта").max(300),
-  type: z.enum(["WEBSITE", "ECOMMERCE", "LANDING", "SUPPORT", "OTHER"]),
+  // Свободный текст — студия может завести свой тип, не только стандартные
+  type: z.string().trim().min(1, "Укажите тип проекта").max(100),
   // Бюджет приходит из формы в рублях, в action конвертируется в копейки
   budgetMajor: z.coerce.number().min(0, "Бюджет не может быть отрицательным"),
   startDate: z.coerce.date().optional().nullable(),

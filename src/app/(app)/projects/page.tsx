@@ -5,7 +5,7 @@ import { listProjects, listOrgUsers } from "@/lib/services/projects";
 import { listClients } from "@/lib/services/clients";
 import { projectFiltersSchema } from "@/lib/validators/project";
 import { formatDate, formatMoney } from "@/lib/format";
-import { PROJECT_STATUS, PROJECT_TYPE } from "@/lib/labels";
+import { PROJECT_STATUS } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -115,7 +115,7 @@ export default async function ProjectsPage({
                     {project.client.companyName}
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-sm">
-                    {PROJECT_TYPE[project.type]}
+                    {project.type}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-right text-sm font-medium">
                     {formatMoney(project.budget)}

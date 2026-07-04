@@ -2,7 +2,6 @@
 import type {
   ClientStatus,
   ProjectStatus,
-  ProjectType,
   MilestoneStatus,
   TaskStatus,
   TaskPriority,
@@ -36,13 +35,14 @@ export const PROJECT_STATUS: LabelMap<ProjectStatus> = {
   CANCELLED: { label: "Отменён", className: "bg-muted text-muted-foreground" },
 };
 
-export const PROJECT_TYPE: Record<ProjectType, string> = {
-  WEBSITE: "Сайт",
-  ECOMMERCE: "Интернет-магазин",
-  LANDING: "Лендинг",
-  SUPPORT: "Поддержка",
-  OTHER: "Другое",
-};
+// Тип проекта — свободный текст в БД; это лишь подсказки для автодополнения
+export const PROJECT_TYPE_SUGGESTIONS = [
+  "Сайт",
+  "Интернет-магазин",
+  "Лендинг",
+  "Поддержка",
+  "Другое",
+];
 
 export const MILESTONE_STATUS: LabelMap<MilestoneStatus> = {
   PENDING: { label: "Ожидает", className: "bg-muted text-muted-foreground" },

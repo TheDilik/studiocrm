@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import type { ProjectStatus, ProjectType } from "@prisma/client";
+import type { ProjectStatus } from "@prisma/client";
 import { createProjectAction, updateProjectAction } from "@/app/actions/projects";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,14 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PROJECT_STATUS, PROJECT_TYPE } from "@/lib/labels";
+import { PROJECT_STATUS, PROJECT_TYPE_SUGGESTIONS } from "@/lib/labels";
 
 const NONE = "__none__";
 
 export type ProjectFormValues = {
   clientId: string;
   name: string;
-  type: ProjectType;
+  type: string;
   budgetMajor: number;
   startDate: string; // yyyy-mm-dd или ""
   deadline: string;
@@ -56,7 +56,6 @@ export function ProjectFormDialog({
   const [error, setError] = useState<string | null>(null);
 
   const [clientId, setClientId] = useState(initial?.clientId ?? "");
-  const [type, setType] = useState<ProjectType>(initial?.type ?? "WEBSITE");
   const [status, setStatus] = useState<ProjectStatus>(initial?.status ?? "NEGOTIATION");
   const [managerId, setManagerId] = useState(initial?.managerId || NONE);
   const [memberIds, setMemberIds] = useState<string[]>(initial?.memberIds ?? []);
@@ -76,7 +75,7 @@ export function ProjectFormDialog({
     const input = {
       clientId,
       name: fd.get("name") as string,
-      type,
+      type: fd.get("type") as string,
       budgetMajor: fd.get("budgetMajor") as string,
       startDate: (fd.get("startDate") as string) || null,
       deadline: (fd.get("deadline") as string) || null,
@@ -133,19 +132,20 @@ export function ProjectFormDialog({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Тип</Label>
-              <Select value={type} onValueChange={(v) => setType(v as ProjectType)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(PROJECT_TYPE).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="type">Тип</Label>
+              <Input
+                id="type"
+                name="type"
+                list="project-type-suggestions"
+                required
+                defaultValue={initial?.type ?? "Сайт"}
+                placeholder="Сайт"
+              />
+              <datalist id="project-type-suggestions">
+                {PROJECT_TYPE_SUGGESTIONS.map((t) => (
+                  <option key={t} value={t} />
+                ))}
+              </datalist>
             </div>
             <div className="space-y-2">
               <Label htmlFor="budgetMajor">Бюджет, ₽</Label>

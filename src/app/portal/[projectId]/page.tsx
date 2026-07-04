@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { requireSession } from "@/lib/rbac";
 import { getPortalProject } from "@/lib/services/portal";
 import { formatDate, formatMoney } from "@/lib/format";
-import { PROJECT_STATUS, PROJECT_TYPE } from "@/lib/labels";
+import { PROJECT_STATUS } from "@/lib/labels";
 import { StatusBadge } from "@/components/status-badge";
 import { MilestoneCard } from "./milestone-card";
 
@@ -34,7 +34,7 @@ export default async function PortalProjectPage({
           <StatusBadge {...PROJECT_STATUS[project.status]} />
         </div>
         <div className="text-sm text-muted-foreground">
-          {PROJECT_TYPE[project.type]} · бюджет {formatMoney(project.budget)} · до{" "}
+          {project.type} · бюджет {formatMoney(project.budget)} · до{" "}
           {formatDate(project.deadline)}
           {project.manager?.name && <> · менеджер: {project.manager.name}</>}
         </div>

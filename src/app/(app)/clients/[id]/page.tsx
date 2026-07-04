@@ -239,7 +239,7 @@ export default async function ClientPage({
                 initial={{
                   clientId: client.id,
                   name: "",
-                  type: "WEBSITE",
+                  type: "Сайт",
                   budgetMajor: 0,
                   startDate: "",
                   deadline: "",

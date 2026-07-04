@@ -15,7 +15,6 @@ import {
 import {
   MILESTONE_STATUS,
   PROJECT_STATUS,
-  PROJECT_TYPE,
   TASK_PRIORITY,
   TASK_STATUS,
 } from "@/lib/labels";
@@ -87,7 +86,7 @@ export default async function ProjectPage({
             >
               {project.client.companyName}
             </Link>{" "}
-            · {PROJECT_TYPE[project.type]} · {formatDate(project.startDate)} —{" "}
+            · {project.type} · {formatDate(project.startDate)} —{" "}
             {formatDate(project.deadline)}
           </div>
         </div>
