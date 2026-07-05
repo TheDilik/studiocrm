@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { canManageClients, canManageSettings, requireSession } from "@/lib/rbac";
 import { AccessDenied } from "@/components/access-denied";
 import { listEmployees, listUnlinkedUsers } from "@/lib/services/employees";
-import { formatHours, formatMoney } from "@/lib/format";
+import { deleteEmployeeAction } from "@/app/actions/employees";
+import { formatHours, formatMoney, toDateInputValue, toMajor } from "@/lib/format";
 import { ABSENCE_TYPE, RATE_TYPE } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { ConfirmDelete } from "@/components/confirm-delete";
 import { EmployeeFormDialog } from "./employee-form-dialog";
 
 export const metadata = { title: "Сотрудники — StudioCRM" };
@@ -27,10 +29,19 @@ export default async function EmployeesPage() {
   const isOwner = canManageSettings(ctx.role);
   if (!canManageClients(ctx.role)) return <AccessDenied />;
 
-  const [employees, unlinkedUsers] = await Promise.all([
-    listEmployees(ctx),
-    isOwner ? listUnlinkedUsers(ctx) : Promise.resolve([]),
-  ]);
+  const employees = await listEmployees(ctx);
+  // Для селекта «Учётная запись» в каждой строке — свободные пользователи
+  // + текущий привязанный (exceptEmployeeId возвращает его в список тоже)
+  const unlinkedUsersByEmployee = isOwner
+    ? new Map(
+        await Promise.all(
+          employees.map(
+            async (e) => [e.id, await listUnlinkedUsers(ctx, e.id)] as const
+          )
+        )
+      )
+    : new Map();
+  const createUnlinkedUsers = isOwner ? await listUnlinkedUsers(ctx) : [];
 
   return (
     <div className="space-y-4">
@@ -38,7 +49,7 @@ export default async function EmployeesPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Сотрудники</h1>
         {isOwner && (
           <EmployeeFormDialog
-            users={unlinkedUsers}
+            users={createUnlinkedUsers}
             trigger={
               <Button>
                 <Plus className="size-4" />
@@ -63,13 +74,14 @@ export default async function EmployeesPage() {
               <TableHead className="text-center">Открытых задач</TableHead>
               <TableHead className="min-w-40">Загрузка за неделю</TableHead>
               <TableHead className="hidden sm:table-cell">Статус</TableHead>
+              {isOwner && <TableHead className="w-20" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {employees.length === 0 && (
               <TableRow>
                 <TableCell
-                  colSpan={isOwner ? 6 : 5}
+                  colSpan={isOwner ? 7 : 5}
                   className="h-24 text-center text-muted-foreground"
                 >
                   Сотрудников пока нет
@@ -141,6 +153,50 @@ export default async function EmployeesPage() {
                       <Badge variant="secondary">Неактивен</Badge>
                     )}
                   </TableCell>
+                  {isOwner && (
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <EmployeeFormDialog
+                          employeeId={e.id}
+                          users={unlinkedUsersByEmployee.get(e.id) ?? []}
+                          initial={{
+                            fullName: e.fullName,
+                            position: e.position ?? "",
+                            rateType: e.rateType,
+                            rateMajor: toMajor(e.rateAmount),
+                            hireDate: toDateInputValue(e.hireDate),
+                            phone: e.phone ?? "",
+                            email: e.email ?? "",
+                            telegram: e.telegram ?? "",
+                            userId: e.userId ?? "",
+                            isActive: e.isActive,
+                          }}
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Редактировать «${e.fullName}»`}
+                            >
+                              <Pencil className="size-3.5" />
+                            </Button>
+                          }
+                        />
+                        <ConfirmDelete
+                          title={`Удалить сотрудника «${e.fullName}»?`}
+                          action={deleteEmployeeAction.bind(null, e.id)}
+                          trigger={
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              aria-label={`Удалить «${e.fullName}»`}
+                            >
+                              <Trash2 className="size-3.5 text-destructive" />
+                            </Button>
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                  )}
                 </TableRow>
               );
             })}

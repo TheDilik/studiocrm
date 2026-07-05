@@ -9,6 +9,7 @@ export const employeeSchema = z.object({
   hireDate: z.coerce.date().optional().nullable(),
   phone: z.string().trim().max(50).optional().or(z.literal("")),
   email: z.string().trim().email("Некорректный email").optional().or(z.literal("")),
+  telegram: z.string().trim().max(100).optional().or(z.literal("")),
   userId: z.string().optional().or(z.literal("")),
   isActive: z.boolean().optional(),
 });

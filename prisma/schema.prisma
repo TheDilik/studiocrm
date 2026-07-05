@@ -414,6 +414,7 @@ model Employee {
   hireDate       DateTime?
   phone          String?
   email          String?
+  telegram       String?
   isActive       Boolean   @default(true)
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

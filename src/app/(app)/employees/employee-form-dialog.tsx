@@ -35,6 +35,7 @@ export type EmployeeFormValues = {
   hireDate: string;
   phone: string;
   email: string;
+  telegram: string;
   userId: string;
   isActive: boolean;
 };
@@ -70,6 +71,7 @@ export function EmployeeFormDialog({
       hireDate: (fd.get("hireDate") as string) || null,
       phone: fd.get("phone") as string,
       email: fd.get("email") as string,
+      telegram: (fd.get("telegram") as string | null) ?? "",
       userId: userId === NONE ? "" : userId,
       isActive: fd.get("isActive") === "on",
     };
@@ -167,6 +169,15 @@ export function EmployeeFormDialog({
                 defaultValue={initial?.email}
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="telegram">Telegram</Label>
+            <Input
+              id="telegram"
+              name="telegram"
+              defaultValue={initial?.telegram}
+              placeholder="@username"
+            />
           </div>
           <div className="space-y-2">
             <Label>Учётная запись</Label>

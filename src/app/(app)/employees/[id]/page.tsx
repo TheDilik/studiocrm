@@ -86,6 +86,7 @@ export default async function EmployeePage({
               employee.hireDate && `в команде с ${formatDate(employee.hireDate)}`,
               employee.phone,
               employee.email,
+              employee.telegram,
             ]
               .filter(Boolean)
               .join(" · ")}
@@ -104,6 +105,7 @@ export default async function EmployeePage({
                 hireDate: toDateInputValue(employee.hireDate),
                 phone: employee.phone ?? "",
                 email: employee.email ?? "",
+                telegram: employee.telegram ?? "",
                 userId: employee.userId ?? "",
                 isActive: employee.isActive,
               }}
