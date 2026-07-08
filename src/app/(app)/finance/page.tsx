@@ -5,6 +5,7 @@ import { AccessDenied } from "@/components/access-denied";
 import {
   checkOverduePayments,
   getFinanceDashboard,
+  listContractorNames,
   listExpenses,
   listPayments,
 } from "@/lib/services/finance";
@@ -51,13 +52,15 @@ export default async function FinancePage({
   // Фоновая проверка просрочки (до подключения крона — при каждом открытии)
   await checkOverduePayments(ctx.organizationId);
 
-  const [dashboard, payments, expenses, clients, projectsRaw] = await Promise.all([
-    getFinanceDashboard(ctx),
-    listPayments(ctx),
-    listExpenses(ctx),
-    listClients(ctx, {}),
-    listAccessibleProjects(ctx),
-  ]);
+  const [dashboard, payments, expenses, clients, projectsRaw, contractorNames] =
+    await Promise.all([
+      getFinanceDashboard(ctx),
+      listPayments(ctx),
+      listExpenses(ctx),
+      listClients(ctx, {}),
+      listAccessibleProjects(ctx),
+      listContractorNames(ctx),
+    ]);
   // Для селекта проекта в платеже нужен clientId
   const projectsWithClient = await prisma.project.findMany({
     where: { organizationId: ctx.organizationId },
@@ -75,6 +78,7 @@ export default async function FinancePage({
           <div className="flex gap-2">
             <ExpenseFormDialog
               projects={projectsRaw}
+              contractorNames={contractorNames}
               trigger={<Button variant="outline">Новый расход</Button>}
             />
             <PaymentFormDialog
@@ -371,6 +375,12 @@ export default async function FinancePage({
                     <TableCell>
                       <div className="font-medium">
                         {EXPENSE_CATEGORY[e.category]}
+                        {e.contractorName && (
+                          <span className="font-normal text-muted-foreground">
+                            {" "}
+                            · {e.contractorName}
+                          </span>
+                        )}
                       </div>
                       {e.description && (
                         <div className="text-xs text-muted-foreground">
@@ -393,11 +403,13 @@ export default async function FinancePage({
                           <ExpenseFormDialog
                             expenseId={e.id}
                             projects={projectsRaw}
+                            contractorNames={contractorNames}
                             initial={{
                               category: e.category,
                               amountMajor: toMajor(e.amount),
                               date: toDateInputValue(e.date),
                               projectId: e.projectId ?? "",
+                              contractorName: e.contractorName ?? "",
                               description: e.description ?? "",
                             }}
                             trigger={

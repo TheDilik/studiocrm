@@ -30,17 +30,20 @@ export type ExpenseFormValues = {
   amountMajor: number;
   date: string;
   projectId: string;
+  contractorName: string;
   description: string;
 };
 
 export function ExpenseFormDialog({
   trigger,
   projects,
+  contractorNames,
   expenseId,
   initial,
 }: {
   trigger: ReactNode;
   projects: { id: string; name: string }[];
+  contractorNames?: string[];
   expenseId?: string;
   initial?: ExpenseFormValues;
 }) {
@@ -63,6 +66,7 @@ export function ExpenseFormDialog({
       amountMajor: fd.get("amountMajor") as string,
       date: fd.get("date") as string,
       projectId: projectId === NONE ? "" : projectId,
+      contractorName: (fd.get("contractorName") as string | null) ?? "",
       description: fd.get("description") as string,
     };
     const result = expenseId
@@ -145,6 +149,26 @@ export function ExpenseFormDialog({
               </Select>
             </div>
           </div>
+          {category === "CONTRACTOR" && (
+            <div className="space-y-2">
+              <Label htmlFor="contractorName">Исполнитель</Label>
+              <Input
+                id="contractorName"
+                name="contractorName"
+                list="contractor-name-suggestions"
+                defaultValue={initial?.contractorName}
+                placeholder="Имя подрядчика/фрилансера"
+              />
+              <datalist id="contractor-name-suggestions">
+                {contractorNames?.map((name) => (
+                  <option key={name} value={name} />
+                ))}
+              </datalist>
+              <p className="text-xs text-muted-foreground">
+                Нужно, чтобы собрать сводку выплат по исполнителям на странице «Сотрудники»
+              </p>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="description">Описание</Label>
             <Input

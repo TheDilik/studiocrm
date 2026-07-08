@@ -229,6 +229,122 @@ export async function deleteEmployee(ctx: SessionContext, id: string) {
   if (count === 0) throw new Error("Сотрудник не найден");
 }
 
+export type PerformerPayout = {
+  performerName: string;
+  type: "employee" | "contractor";
+  projectId: string;
+  projectName: string;
+  paidAmount: number; // минорные единицы
+};
+
+/**
+ * Сводка выплат «исполнитель × проект», объединяет два источника:
+ * — сотрудники: зарплатная себестоимость по трекингу времени (та же
+ *   математика, что и в computeProfitability, но разбита по человеку);
+ * — подрядчики: сумма расходов категории CONTRACTOR по contractorName.
+ */
+export async function getPerformerPayouts(
+  ctx: SessionContext
+): Promise<PerformerPayout[]> {
+  if (!canManageSettings(ctx.role)) throw new ForbiddenError();
+
+  const MONTHLY_HOURS = 160;
+
+  const [entries, employees, contractorExpenses] = await Promise.all([
+    prisma.timeEntry.findMany({
+      where: { organizationId: ctx.organizationId, isRunning: false },
+      select: {
+        minutes: true,
+        userId: true,
+        task: {
+          select: { projectId: true, project: { select: { name: true } } },
+        },
+      },
+    }),
+    prisma.employee.findMany({
+      where: { organizationId: ctx.organizationId, userId: { not: null } },
+      select: { userId: true, fullName: true, rateType: true, rateAmount: true },
+    }),
+    prisma.expense.findMany({
+      where: {
+        organizationId: ctx.organizationId,
+        category: "CONTRACTOR",
+        projectId: { not: null },
+        contractorName: { not: null },
+      },
+      select: {
+        amount: true,
+        contractorName: true,
+        projectId: true,
+        project: { select: { name: true } },
+      },
+    }),
+  ]);
+
+  const employeeByUser = new Map(employees.map((e) => [e.userId!, e]));
+
+  const employeeMinutes = new Map<string, number>();
+  const projectNames = new Map<string, string>();
+  for (const entry of entries) {
+    if (!entry.task.projectId) continue;
+    const key = `${entry.userId}::${entry.task.projectId}`;
+    employeeMinutes.set(key, (employeeMinutes.get(key) ?? 0) + entry.minutes);
+    projectNames.set(entry.task.projectId, entry.task.project.name);
+  }
+
+  const payouts: PerformerPayout[] = [];
+  for (const [key, minutes] of employeeMinutes) {
+    const [userId, projectId] = key.split("::");
+    const employee = employeeByUser.get(userId);
+    if (!employee) continue;
+    const hourlyRate =
+      employee.rateType === "HOURLY"
+        ? employee.rateAmount
+        : Math.round(employee.rateAmount / MONTHLY_HOURS);
+    payouts.push({
+      performerName: employee.fullName,
+      type: "employee",
+      projectId,
+      projectName: projectNames.get(projectId) ?? "",
+      paidAmount: Math.round((minutes / 60) * hourlyRate),
+    });
+  }
+
+  const contractorTotals = new Map<
+    string,
+    { name: string; projectId: string; projectName: string; amount: number }
+  >();
+  for (const exp of contractorExpenses) {
+    const key = `${exp.contractorName}::${exp.projectId}`;
+    const existing = contractorTotals.get(key);
+    if (existing) {
+      existing.amount += exp.amount;
+    } else {
+      contractorTotals.set(key, {
+        name: exp.contractorName!,
+        projectId: exp.projectId!,
+        projectName: exp.project?.name ?? "",
+        amount: exp.amount,
+      });
+    }
+  }
+  for (const { name, projectId, projectName, amount } of contractorTotals.values()) {
+    payouts.push({
+      performerName: name,
+      type: "contractor",
+      projectId,
+      projectName,
+      paidAmount: amount,
+    });
+  }
+
+  return payouts.sort(
+    (a, b) =>
+      a.performerName.localeCompare(b.performerName, "ru") ||
+      a.projectName.localeCompare(b.projectName, "ru")
+  );
+}
+
 // --- Отсутствия ---
 
 export async function addAbsence(

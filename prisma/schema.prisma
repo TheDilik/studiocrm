@@ -471,6 +471,7 @@ model Expense {
   organizationId String
   projectId      String?
   employeeId     String? // если это зарплатная часть
+  contractorName String? // имя подрядчика/фрилансера (для категории CONTRACTOR)
   category       ExpenseCategory @default(OTHER)
   amount         Int
   date           DateTime        @default(now())

@@ -2,9 +2,19 @@ import Link from "next/link";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { canManageClients, canManageSettings, requireSession } from "@/lib/rbac";
 import { AccessDenied } from "@/components/access-denied";
-import { listEmployees, listUnlinkedUsers } from "@/lib/services/employees";
+import {
+  getPerformerPayouts,
+  listEmployees,
+  listUnlinkedUsers,
+} from "@/lib/services/employees";
 import { deleteEmployeeAction } from "@/app/actions/employees";
 import { formatHours, formatMoney, toDateInputValue, toMajor } from "@/lib/format";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ABSENCE_TYPE, RATE_TYPE } from "@/lib/labels";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,6 +52,7 @@ export default async function EmployeesPage() {
       )
     : new Map();
   const createUnlinkedUsers = isOwner ? await listUnlinkedUsers(ctx) : [];
+  const payouts = isOwner ? await getPerformerPayouts(ctx) : [];
 
   return (
     <div className="space-y-4">
@@ -203,6 +214,55 @@ export default async function EmployeesPage() {
           </TableBody>
         </Table>
       </div>
+
+      {isOwner && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Выплаты по проектам</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Исполнитель</TableHead>
+                    <TableHead className="hidden sm:table-cell">Тип</TableHead>
+                    <TableHead>Проект</TableHead>
+                    <TableHead className="text-right">Выплачено</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {payouts.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="h-24 text-center text-muted-foreground"
+                      >
+                        Пока нет данных — появятся, когда сотрудники внесут время
+                        по проектам или заведены расходы категории «Подрядчики»
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {payouts.map((p, i) => (
+                    <TableRow key={`${p.performerName}-${p.projectId}-${i}`}>
+                      <TableCell className="font-medium">
+                        {p.performerName}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell text-sm text-muted-foreground">
+                        {p.type === "employee" ? "Сотрудник" : "Подрядчик"}
+                      </TableCell>
+                      <TableCell className="text-sm">{p.projectName}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {formatMoney(p.paidAmount)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -19,6 +19,8 @@ export const expenseSchema = z.object({
   amountMajor: z.coerce.number().positive("Сумма должна быть больше нуля"),
   date: z.coerce.date(),
   projectId: z.string().optional().or(z.literal("")),
+  // Имя подрядчика/фрилансера — заполняется для category = CONTRACTOR
+  contractorName: z.string().trim().max(200).optional().or(z.literal("")),
   description: z.string().trim().max(1000).optional().or(z.literal("")),
 });
 export type ExpenseInput = z.infer<typeof expenseSchema>;

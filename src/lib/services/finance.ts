@@ -173,6 +173,17 @@ export async function listExpenses(ctx: SessionContext) {
   });
 }
 
+/** Уникальные имена исполнителей-подрядчиков — подсказки при вводе. */
+export async function listContractorNames(ctx: SessionContext) {
+  assertView(ctx);
+  const rows = await prisma.expense.findMany({
+    where: { organizationId: ctx.organizationId, contractorName: { not: null } },
+    select: { contractorName: true },
+    distinct: ["contractorName"],
+  });
+  return rows.map((r) => r.contractorName!).filter(Boolean);
+}
+
 export async function createExpense(ctx: SessionContext, input: ExpenseInput) {
   assertEdit(ctx);
   return prisma.expense.create({
@@ -182,6 +193,7 @@ export async function createExpense(ctx: SessionContext, input: ExpenseInput) {
       amount: toMinor(input.amountMajor),
       date: input.date,
       projectId: emptyToNull(input.projectId),
+      contractorName: emptyToNull(input.contractorName),
       description: emptyToNull(input.description),
     },
   });
@@ -200,6 +212,7 @@ export async function updateExpense(
       amount: toMinor(input.amountMajor),
       date: input.date,
       projectId: emptyToNull(input.projectId),
+      contractorName: emptyToNull(input.contractorName),
       description: emptyToNull(input.description),
     },
   });
