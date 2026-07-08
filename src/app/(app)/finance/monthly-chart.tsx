@@ -1,13 +1,34 @@
 // Простой SVG-график доход/расход по месяцам (без клиентского JS).
+// Каждый столбец — ссылка, переключающая дашборд на этот месяц.
+import Link from "next/link";
 import { formatMoney } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export function MonthlyChart({
   months,
+  activeMonthOffset,
+  tab,
 }: {
-  months: { key: string; label: string; income: number; expense: number }[];
+  months: {
+    key: string;
+    label: string;
+    income: number;
+    expense: number;
+    monthOffset: number;
+  }[];
+  activeMonthOffset: number;
+  tab?: string;
 }) {
   const max = Math.max(1, ...months.flatMap((m) => [m.income, m.expense]));
   const H = 160;
+
+  const hrefFor = (offset: number) => {
+    const params = new URLSearchParams();
+    if (offset !== 0) params.set("month", String(offset));
+    if (tab) params.set("tab", tab);
+    const qs = params.toString();
+    return qs ? `?${qs}` : "?";
+  };
 
   return (
     <div>
@@ -15,22 +36,36 @@ export function MonthlyChart({
         {months.map((m) => {
           const ih = Math.round((m.income / max) * H);
           const eh = Math.round((m.expense / max) * H);
+          const isActive = m.monthOffset === activeMonthOffset;
           return (
-            <div key={m.key} className="flex min-w-12 flex-1 flex-col items-center gap-1">
+            <Link
+              key={m.key}
+              href={hrefFor(m.monthOffset)}
+              className={cn(
+                "flex min-w-12 flex-1 flex-col items-center gap-1 rounded-md py-1 transition-colors hover:bg-accent/50",
+                isActive && "bg-accent"
+              )}
+              title={`${m.label}: доход ${formatMoney(m.income)}, расход ${formatMoney(m.expense)}`}
+            >
               <div className="flex h-40 items-end gap-1">
                 <div
                   className="w-4 rounded-t bg-emerald-500/80"
                   style={{ height: Math.max(m.income > 0 ? 3 : 0, ih) }}
-                  title={`Доход: ${formatMoney(m.income)}`}
                 />
                 <div
                   className="w-4 rounded-t bg-red-400/80"
                   style={{ height: Math.max(m.expense > 0 ? 3 : 0, eh) }}
-                  title={`Расход: ${formatMoney(m.expense)}`}
                 />
               </div>
-              <span className="text-[11px] text-muted-foreground">{m.label}</span>
-            </div>
+              <span
+                className={cn(
+                  "text-[11px] text-muted-foreground",
+                  isActive && "font-semibold text-foreground"
+                )}
+              >
+                {m.label}
+              </span>
+            </Link>
           );
         })}
       </div>

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { canEditFinance, canViewFinance, requireSession } from "@/lib/rbac";
 import { AccessDenied } from "@/components/access-denied";
 import {
@@ -42,10 +42,12 @@ export const metadata = { title: "Финансы — StudioCRM" };
 export default async function FinancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; month?: string }>;
 }) {
   const ctx = await requireSession();
-  const tab = (await searchParams).tab ?? "payments";
+  const params = await searchParams;
+  const tab = params.tab ?? "payments";
+  const monthOffset = Number(params.month ?? "0") || 0;
   const canEdit = canEditFinance(ctx.role);
   if (!canViewFinance(ctx.role)) return <AccessDenied />;
 
@@ -54,7 +56,7 @@ export default async function FinancePage({
 
   const [dashboard, payments, expenses, clients, projectsRaw, contractorNames] =
     await Promise.all([
-      getFinanceDashboard(ctx),
+      getFinanceDashboard(ctx, monthOffset),
       listPayments(ctx),
       listExpenses(ctx),
       listClients(ctx, {}),
@@ -69,6 +71,10 @@ export default async function FinancePage({
   });
 
   const m = dashboard.month;
+  const monthHref = (offset: number) =>
+    `?${new URLSearchParams({ tab, month: String(offset) }).toString()}`;
+  const tabHref = (tabName: string) =>
+    `?${new URLSearchParams({ tab: tabName, month: String(monthOffset) }).toString()}`;
 
   return (
     <div className="space-y-6">
@@ -91,6 +97,28 @@ export default async function FinancePage({
               }
             />
           </div>
+        )}
+      </div>
+
+      {/* Переключение месяца */}
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="icon" className="size-8" asChild>
+          <Link href={monthHref(monthOffset - 1)} aria-label="Предыдущий месяц">
+            <ChevronLeft className="size-4" />
+          </Link>
+        </Button>
+        <span className="min-w-40 text-center text-sm text-muted-foreground">
+          {m.label}
+        </span>
+        <Button variant="outline" size="icon" className="size-8" asChild>
+          <Link href={monthHref(monthOffset + 1)} aria-label="Следующий месяц">
+            <ChevronRight className="size-4" />
+          </Link>
+        </Button>
+        {monthOffset !== 0 && (
+          <Button variant="ghost" size="sm" asChild>
+            <Link href={monthHref(0)}>Сегодня</Link>
+          </Button>
         )}
       </div>
 
@@ -162,7 +190,11 @@ export default async function FinancePage({
             <CardTitle>Доход и расход по месяцам</CardTitle>
           </CardHeader>
           <CardContent>
-            <MonthlyChart months={dashboard.months} />
+            <MonthlyChart
+              months={dashboard.months}
+              activeMonthOffset={monthOffset}
+              tab={tab}
+            />
           </CardContent>
         </Card>
 
@@ -253,7 +285,7 @@ export default async function FinancePage({
       <div className="space-y-3">
         <div className="flex rounded-lg border p-0.5 w-fit">
           <Link
-            href="?tab=payments"
+            href={tabHref("payments")}
             className={cn(
               "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
               tab === "payments"
@@ -264,7 +296,7 @@ export default async function FinancePage({
             Доходы
           </Link>
           <Link
-            href="?tab=expenses"
+            href={tabHref("expenses")}
             className={cn(
               "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
               tab === "expenses"

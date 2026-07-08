@@ -270,11 +270,11 @@ async function salaryCostForPeriod(
   }, 0);
 }
 
-export async function getFinanceDashboard(ctx: SessionContext) {
+export async function getFinanceDashboard(ctx: SessionContext, monthOffset = 0) {
   assertView(ctx);
   const organizationId = ctx.organizationId;
   const now = new Date();
-  const thisMonth = monthStart(now);
+  const thisMonth = addMonths(monthStart(now), monthOffset);
   const nextMonth = addMonths(thisMonth, 1);
 
   // Текущий месяц
@@ -315,7 +315,13 @@ export async function getFinanceDashboard(ctx: SessionContext) {
     }),
   ]);
 
-  const months: { key: string; label: string; income: number; expense: number }[] = [];
+  const months: {
+    key: string;
+    label: string;
+    income: number;
+    expense: number;
+    monthOffset: number;
+  }[] = [];
   for (let i = 0; i < 12; i++) {
     const m = addMonths(chartStart, i);
     months.push({
@@ -323,6 +329,8 @@ export async function getFinanceDashboard(ctx: SessionContext) {
       label: m.toLocaleDateString("ru-RU", { month: "short" }),
       income: 0,
       expense: 0,
+      // Смещение от текущего реального месяца — для ссылки-клика по столбцу
+      monthOffset: monthOffset - 11 + i,
     });
   }
   const monthIndex = new Map(months.map((m, i) => [m.key, i]));
@@ -413,7 +421,7 @@ export async function getFinanceDashboard(ctx: SessionContext) {
       salaryCost,
       profit: income - expenses,
       label: (() => {
-        const s = now.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
+        const s = thisMonth.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
         return s.charAt(0).toUpperCase() + s.slice(1);
       })(),
     },
