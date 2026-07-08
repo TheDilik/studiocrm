@@ -188,17 +188,23 @@ export default async function EmployeePage({
                     {employee.report.doneTasks}
                   </div>
                 </div>
-                {isOwner && employee.rateType === "HOURLY" && (
+                {isOwner && (
                   <div className="rounded-lg border px-4 py-2.5">
                     <div className="text-xs text-muted-foreground">
-                      Зарплата за часы
+                      Выплачено за месяц
                     </div>
                     <div className="text-lg font-bold">
-                      {formatMoney(
-                        Math.round(
-                          (employee.report.totalMinutes / 60) * employee.rateAmount
-                        )
-                      )}
+                      {formatMoney(employee.report.totalPaid)}
+                    </div>
+                  </div>
+                )}
+                {isOwner && employee.report.remaining !== null && (
+                  <div className="rounded-lg border px-4 py-2.5">
+                    <div className="text-xs text-muted-foreground">
+                      Остаток оклада
+                    </div>
+                    <div className="text-lg font-bold">
+                      {formatMoney(employee.report.remaining)}
                     </div>
                   </div>
                 )}
@@ -225,6 +231,14 @@ export default async function EmployeePage({
                           <span className="font-medium text-foreground">
                             {formatHours(p.minutes)}
                           </span>
+                          {isOwner && (
+                            <>
+                              {" · "}
+                              <span className="font-medium text-foreground">
+                                {formatMoney(p.paidAmount)}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                     ))}

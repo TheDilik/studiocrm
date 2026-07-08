@@ -89,9 +89,25 @@ export async function getEmployee(
   });
   if (!employee) return null;
 
+  // Часовая ставка для расчёта выплат: месячная делится на условную норму часов
+  const MONTHLY_HOURS = 160;
+  const hourlyRate =
+    employee.rateType === "HOURLY"
+      ? employee.rateAmount
+      : Math.round(employee.rateAmount / MONTHLY_HOURS);
+
   let report: {
     totalMinutes: number;
-    byProject: { projectId: string; projectName: string; minutes: number; taskCount: number }[];
+    totalPaid: number;
+    // Остаток от оклада, не «отработанный» проектами за период — только для MONTHLY
+    remaining: number | null;
+    byProject: {
+      projectId: string;
+      projectName: string;
+      minutes: number;
+      taskCount: number;
+      paidAmount: number;
+    }[];
     doneTasks: number;
     entries: {
       id: string;
@@ -101,7 +117,7 @@ export async function getEmployee(
       projectName: string;
       isManual: boolean;
     }[];
-  } = { totalMinutes: 0, byProject: [], doneTasks: 0, entries: [] };
+  } = { totalMinutes: 0, totalPaid: 0, remaining: null, byProject: [], doneTasks: 0, entries: [] };
 
   if (employee.userId) {
     const [entries, doneTasks] = await Promise.all([
@@ -151,16 +167,25 @@ export async function getEmployee(
       byProject.set(key, row);
     }
 
+    const byProjectWithPay = [...byProject.values()]
+      .map((r) => ({
+        projectId: r.projectId,
+        projectName: r.projectName,
+        minutes: r.minutes,
+        taskCount: r.tasks.size,
+        paidAmount: Math.round((r.minutes / 60) * hourlyRate),
+      }))
+      .sort((a, b) => b.minutes - a.minutes);
+    const totalPaid = byProjectWithPay.reduce((sum, r) => sum + r.paidAmount, 0);
+
     report = {
       totalMinutes: total,
-      byProject: [...byProject.values()]
-        .map((r) => ({
-          projectId: r.projectId,
-          projectName: r.projectName,
-          minutes: r.minutes,
-          taskCount: r.tasks.size,
-        }))
-        .sort((a, b) => b.minutes - a.minutes),
+      totalPaid,
+      remaining:
+        employee.rateType === "MONTHLY"
+          ? Math.max(0, employee.rateAmount - totalPaid)
+          : null,
+      byProject: byProjectWithPay,
       doneTasks,
       entries: entries.map((e) => ({
         id: e.id,
