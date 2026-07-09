@@ -110,6 +110,91 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
+/* ============================================================
+   Дизайн-система v2 «Modern» — синий акцент, мягкие тени,
+   крупные скругления. Активируется через <html data-design="v2">,
+   классическая v1 остаётся дефолтом без изменений.
+   ============================================================ */
+
+html[data-design="v2"]:not(.dark) {
+  --radius: 1rem;
+  --background: oklch(0.975 0.005 255);
+  --foreground: oklch(0.21 0.02 262);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.02 262);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.02 262);
+  --primary: oklch(0.546 0.245 262.881);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.955 0.007 255);
+  --secondary-foreground: oklch(0.21 0.02 262);
+  --muted: oklch(0.955 0.007 255);
+  --muted-foreground: oklch(0.554 0.02 262);
+  --accent: oklch(0.951 0.023 255.585);
+  --accent-foreground: oklch(0.488 0.243 264.376);
+  --border: oklch(0.922 0.008 255);
+  --input: oklch(0.922 0.008 255);
+  --ring: oklch(0.623 0.214 259.815);
+  --chart-1: oklch(0.546 0.245 262.881);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.21 0.02 262);
+  --sidebar-primary: oklch(0.546 0.245 262.881);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.951 0.023 255.585);
+  --sidebar-accent-foreground: oklch(0.488 0.243 264.376);
+  --sidebar-border: oklch(0.93 0.007 255);
+  --sidebar-ring: oklch(0.623 0.214 259.815);
+}
+
+html[data-design="v2"].dark {
+  --radius: 1rem;
+  --background: oklch(0.165 0.02 262);
+  --foreground: oklch(0.96 0.005 255);
+  --card: oklch(0.21 0.022 262);
+  --card-foreground: oklch(0.96 0.005 255);
+  --popover: oklch(0.21 0.022 262);
+  --popover-foreground: oklch(0.96 0.005 255);
+  --primary: oklch(0.623 0.214 259.815);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.26 0.022 262);
+  --secondary-foreground: oklch(0.96 0.005 255);
+  --muted: oklch(0.26 0.022 262);
+  --muted-foreground: oklch(0.65 0.02 262);
+  --accent: oklch(0.28 0.06 262);
+  --accent-foreground: oklch(0.809 0.105 251.813);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 14%);
+  --ring: oklch(0.623 0.214 259.815);
+  --chart-1: oklch(0.623 0.214 259.815);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.21 0.022 262);
+  --sidebar-foreground: oklch(0.96 0.005 255);
+  --sidebar-primary: oklch(0.623 0.214 259.815);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.28 0.06 262);
+  --sidebar-accent-foreground: oklch(0.809 0.105 251.813);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.623 0.214 259.815);
+}
+
+/* v2: карточки без жёсткой рамки, с мягкой «парящей» тенью */
+html[data-design="v2"]:not(.dark) [data-slot="card"] {
+  border-color: transparent;
+  box-shadow:
+    0 1px 2px oklch(0.21 0.02 262 / 0.04),
+    0 6px 20px oklch(0.21 0.02 262 / 0.06);
+}
+html[data-design="v2"].dark [data-slot="card"] {
+  box-shadow: 0 6px 20px oklch(0 0 0 / 0.25);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

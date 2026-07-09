@@ -298,6 +298,26 @@ export async function getFinanceDashboard(ctx: SessionContext, monthOffset = 0) 
   // Расходы месяца = прямые расходы + авторасчёт зарплатной части по трекингу
   const expenses = (expenseAgg._sum.amount ?? 0) + salaryCost;
 
+  // Прошлый месяц той же формулой — для трендовых бейджей «% к прошлому месяцу»
+  const prevMonth = addMonths(thisMonth, -1);
+  const [prevIncomeAgg, prevExpenseAgg, prevSalaryCost] = await Promise.all([
+    prisma.payment.aggregate({
+      where: {
+        organizationId,
+        status: "RECEIVED",
+        paidAt: { gte: prevMonth, lt: thisMonth },
+      },
+      _sum: { amount: true },
+    }),
+    prisma.expense.aggregate({
+      where: { organizationId, date: { gte: prevMonth, lt: thisMonth } },
+      _sum: { amount: true },
+    }),
+    salaryCostForPeriod(organizationId, prevMonth, thisMonth),
+  ]);
+  const prevIncome = prevIncomeAgg._sum.amount ?? 0;
+  const prevExpenses = (prevExpenseAgg._sum.amount ?? 0) + prevSalaryCost;
+
   // График 12 месяцев
   const chartStart = addMonths(thisMonth, -11);
   const [payments12, expenses12] = await Promise.all([
@@ -420,6 +440,8 @@ export async function getFinanceDashboard(ctx: SessionContext, monthOffset = 0) 
       expenses,
       salaryCost,
       profit: income - expenses,
+      prevIncome,
+      prevExpenses,
       label: (() => {
         const s = thisMonth.toLocaleDateString("ru-RU", { month: "long", year: "numeric" });
         return s.charAt(0).toUpperCase() + s.slice(1);

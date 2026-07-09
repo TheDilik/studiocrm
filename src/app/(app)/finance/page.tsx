@@ -31,7 +31,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StatusBadge } from "@/components/status-badge";
+import { TrendBadge } from "@/components/trend-badge";
 import { ConfirmDelete } from "@/components/confirm-delete";
+import { getDesignVersion } from "@/lib/design-server";
 import { cn } from "@/lib/utils";
 import { MonthlyChart } from "./monthly-chart";
 import { PaymentFormDialog } from "./payment-form-dialog";
@@ -49,6 +51,7 @@ export default async function FinancePage({
   const tab = params.tab ?? "payments";
   const monthOffset = Number(params.month ?? "0") || 0;
   const canEdit = canEditFinance(ctx.role);
+  const design = await getDesignVersion();
   if (!canViewFinance(ctx.role)) return <AccessDenied />;
 
   // Фоновая проверка просрочки (до подключения крона — при каждом открытии)
@@ -130,8 +133,13 @@ export default async function FinancePage({
               Доход · {m.label}
             </CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
-            {formatMoney(m.income)}
+          <CardContent className="flex flex-wrap items-center gap-2">
+            <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+              {formatMoney(m.income)}
+            </span>
+            {design === "v2" && (
+              <TrendBadge current={m.income} previous={m.prevIncome} />
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -141,7 +149,12 @@ export default async function FinancePage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatMoney(m.expenses)}</div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-2xl font-bold">{formatMoney(m.expenses)}</span>
+              {design === "v2" && (
+                <TrendBadge current={m.expenses} previous={m.prevExpenses} invert />
+              )}
+            </div>
             <div className="text-xs text-muted-foreground">
               вкл. зарплату по трекингу {formatMoney(m.salaryCost)}
             </div>

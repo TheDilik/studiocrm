@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { UserMenu } from "@/components/layout/user-menu";
+import { getDesignVersion } from "@/lib/design-server";
 
 export default async function PortalLayout({
   children,
@@ -13,6 +14,7 @@ export default async function PortalLayout({
   if (session.user.role !== "CLIENT") redirect("/");
 
   const { name, email, role } = session.user;
+  const design = await getDesignVersion();
 
   return (
     <div className="min-h-screen">
@@ -21,7 +23,7 @@ export default async function PortalLayout({
         <span className="text-sm text-muted-foreground">· Портал клиента</span>
         <div className="flex-1" />
         <ThemeToggle />
-        <UserMenu name={name ?? email} email={email} role={role} />
+        <UserMenu name={name ?? email} email={email} role={role} design={design} />
       </header>
       <main className="mx-auto max-w-4xl p-4 md:p-6">{children}</main>
     </div>
