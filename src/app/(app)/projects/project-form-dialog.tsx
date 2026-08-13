@@ -154,7 +154,7 @@ export function ProjectFormDialog({
                 name="budgetMajor"
                 type="number"
                 min="0"
-                step="1000"
+                step="1"
                 defaultValue={initial?.budgetMajor ?? 0}
               />
             </div>

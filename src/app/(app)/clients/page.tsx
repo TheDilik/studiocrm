@@ -55,9 +55,11 @@ export default async function ClientsPage({
         />
       </div>
 
-      <ClientsToolbar sources={sources} managers={managers} />
+      <div className="rounded-lg border bg-card p-3">
+        <ClientsToolbar sources={sources} managers={managers} />
+      </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
