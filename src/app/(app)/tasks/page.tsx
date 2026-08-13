@@ -100,13 +100,15 @@ export default async function TasksPage({
         />
       )}
 
-      <TasksToolbar
-        view={view}
-        weekStart={weekStart}
-        projects={projects}
-        users={users}
-        showFilters={ctx.role !== "EMPLOYEE"}
-      />
+      <div className="rounded-lg border bg-card p-3">
+        <TasksToolbar
+          view={view}
+          weekStart={weekStart}
+          projects={projects}
+          users={users}
+          showFilters={ctx.role !== "EMPLOYEE"}
+        />
+      </div>
 
       {view === "kanban" && (
         <KanbanBoard

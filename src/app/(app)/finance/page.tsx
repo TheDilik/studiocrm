@@ -296,7 +296,7 @@ export default async function FinancePage({
 
       {/* Таблицы: платежи / расходы */}
       <div className="space-y-3">
-        <div className="flex rounded-lg border p-0.5 w-fit">
+        <div className="flex rounded-lg border bg-card p-0.5 w-fit">
           <Link
             href={tabHref("payments")}
             className={cn(
@@ -322,7 +322,7 @@ export default async function FinancePage({
         </div>
 
         {tab === "payments" ? (
-          <div className="rounded-lg border">
+          <div className="rounded-lg border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -403,7 +403,7 @@ export default async function FinancePage({
             </Table>
           </div>
         ) : (
-          <div className="rounded-lg border">
+          <div className="rounded-lg border bg-card">
             <Table>
               <TableHeader>
                 <TableRow>

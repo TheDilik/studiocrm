@@ -71,7 +71,7 @@ export default async function EmployeesPage() {
         )}
       </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>

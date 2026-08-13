@@ -18,7 +18,7 @@ export function CalendarView({
   const todayKey = localDayKey(new Date());
 
   return (
-    <div className="overflow-x-auto rounded-lg border">
+    <div className="overflow-x-auto rounded-lg border bg-card">
       <table className="w-full min-w-4xl border-collapse text-sm">
         <thead>
           <tr className="border-b bg-muted/40">

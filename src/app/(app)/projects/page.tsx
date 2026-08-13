@@ -54,15 +54,17 @@ export default async function ProjectsPage({
         )}
       </div>
 
-      <ProjectsToolbar
-        clients={
-          canManage
-            ? clients.map((c) => ({ id: c.id, companyName: c.companyName }))
-            : []
-        }
-      />
+      <div className="rounded-lg border bg-card p-3">
+        <ProjectsToolbar
+          clients={
+            canManage
+              ? clients.map((c) => ({ id: c.id, companyName: c.companyName }))
+              : []
+          }
+        />
+      </div>
 
-      <div className="rounded-lg border">
+      <div className="rounded-lg border bg-card">
         <Table>
           <TableHeader>
             <TableRow>
